@@ -1,0 +1,25 @@
+---
+description: Log every user Cursor prompt to AI_LOG.md
+alwaysApply: true
+---
+
+# AI Prompt Logging
+
+At the start of every turn (before doing other work), append the latest user prompt to `AI_LOG.md` in the project root.
+
+## Format
+
+```markdown
+---
+
+```
+<exact user prompt text>
+```
+```
+
+## Rules
+
+- Log the full user prompt text exactly as received (do not summarize).
+- Append only; never delete or rewrite earlier entries (except when the user explicitly asks to edit the log).
+- Do this once per user message, even if the turn involves multiple tool calls.
+- If `AI_LOG.md` is missing, create it with a short header: `# AI Prompt Log`
