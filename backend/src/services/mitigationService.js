@@ -94,10 +94,18 @@ function updateMitigation(id, data) {
 function deleteMitigation(id) {
   const existing = getMitigationOrThrow(id);
   const riskId = existing.riskId;
+  const risk = getRiskOrThrow(riskId);
+  const currentMitigations = mitigationRepository.findByRiskId(riskId);
+
+  // Keep the Closed-without-mitigation rule enforceable: do not allow
+  // removing the last mitigation from an already-Closed risk.
+  if (risk.status === 'Closed' && currentMitigations.length === 1) {
+    throw new ValidationError(
+      'Cannot delete the last mitigation from a Closed risk',
+    );
+  }
 
   mitigationRepository.remove(id);
-
-  const risk = getRiskOrThrow(riskId);
   const mitigations = mitigationRepository.findByRiskId(riskId);
 
   return {

@@ -1,0 +1,36 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.score-severity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.risk-row {
+  cursor: pointer;
+}
+
+.risk-row:hover {
+  background: var(--gray-a3);
+}
+
+.risk-row--high {
+  box-shadow: inset 3px 0 0 var(--orange-9);
+}
+
+.risk-row--critical {
+  box-shadow: inset 3px 0 0 var(--red-9);
+}

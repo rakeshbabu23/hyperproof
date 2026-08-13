@@ -114,4 +114,50 @@ describe('risk and mitigation API (integration)', () => {
       /cannot be marked as Closed when it has no mitigations/i,
     );
   });
+
+  it('rejects deleting the last mitigation from a Closed risk', async () => {
+    const created = await request('POST', '/risks', {
+      title: 'Access control gap',
+      description: 'Privileged access is not reviewed',
+      category: 'Compliance',
+      owner: 'Compliance',
+      likelihood: 2,
+      impact: 4,
+      status: 'Open',
+    });
+
+    assert.equal(created.status, 201);
+    const riskId = created.payload.data.id;
+
+    const mitigation = await request('POST', `/risks/${riskId}/mitigations`, {
+      description: 'Quarterly access review',
+      effectiveness: 4,
+    });
+    assert.equal(mitigation.status, 201);
+    const mitigationId = mitigation.payload.data.mitigation.id;
+
+    const closed = await request('PUT', `/risks/${riskId}`, {
+      title: 'Access control gap',
+      description: 'Privileged access is not reviewed',
+      category: 'Compliance',
+      owner: 'Compliance',
+      likelihood: 2,
+      impact: 4,
+      status: 'Closed',
+    });
+    assert.equal(closed.status, 200);
+
+    const deleted = await request('DELETE', `/mitigations/${mitigationId}`);
+    assert.equal(deleted.status, 400);
+    assert.equal(deleted.payload.success, false);
+    assert.match(
+      deleted.payload.message,
+      /cannot delete the last mitigation from a Closed risk/i,
+    );
+
+    const fetched = await request('GET', `/risks/${riskId}`);
+    assert.equal(fetched.status, 200);
+    assert.equal(fetched.payload.data.status, 'Closed');
+    assert.equal(fetched.payload.data.mitigationCount, 1);
+  });
 });

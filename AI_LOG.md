@@ -272,3 +272,156 @@ Verify the error message is clear.
 
 Keep the integration tests focused on actual behavior, not implementation details.
 ```
+
+---
+
+```
+Explore the hyperproof project at /Users/alimisettyrakeshbabu/Desktop/hyperproof thoroughly. I need:
+
+1. Find the original requirements document(s) - look for README, REQUIREMENTS, specs, assignment docs, PRD, etc.
+2. Map the complete backend structure: folders, key files for schema/models, routes/controllers, validation, scoring/risk logic, tests.
+3. Return:
+   - Full path(s) to requirements docs and a summary of what they contain
+   - Backend tech stack
+   - List of all backend source files with brief purpose
+   - List of test files
+   - Any existing review notes or AI_LOG context about requirements
+
+Be very thorough - search for "risk", "mitigation", "residual", "severity", "score" related files. Read README and any assignment/spec files completely and include their key content in your response.
+```
+
+---
+
+```
+Before starting the frontend, review the complete backend implementation against the original requirements.
+
+Do not change the code immediately. First review the complete implementation and identify what needs to be fixed.
+
+Check the database schema, relationships, request validation, scoring logic, severity logic, residual risk calculation, Closed-without-mitigation rule, Risk CRUD APIs, Mitigation APIs, category and status filters, residual score sorting, error handling, unit tests and integration tests.
+
+Identify the following:
+
+1. Anything which is missing from the original requirements.
+2. Any bugs or incorrect business logic.
+3. Any unnecessary complexity or abstractions.
+4. Any places where the implementation is difficult to explain in an interview.
+5. Any requirement which is not fully covered by the current implementation.
+
+After the review is complete, fix only the issues which are actually necessary based on the original requirements.
+
+Do not add new features or unnecessary improvements. Keep the implementation simple, readable and easy to explain in an interview.
+```
+
+---
+
+```
+Now implement the frontend API layer.
+
+Use the existing React + TypeScript setup.
+
+Create TypeScript types/interfaces for:
+
+Risk
+Mitigation
+RiskCategory
+RiskStatus
+Severity
+
+The Risk type should include the calculated values returned by the backend:
+
+- inherentScore
+- inherentSeverity
+- residualScore
+- residualSeverity
+- mitigationCount
+
+Create a small API client/service layer for:
+
+- getRisks(filters)
+- getRisk(id)
+- createRisk(data)
+- updateRisk(id, data)
+- deleteRisk(id)
+- createMitigation(riskId, data)
+- updateMitigation(id, data)
+- deleteMitigation(id)
+
+Do not put fetch/axios calls directly inside every React component.
+
+Use the existing HTTP client if the project already has one.
+
+Keep the API layer simple.
+
+clean the existing code, unsused svgs, boiler plate code, use radix UI librariy for components
+```
+
+---
+
+
+```
+Can you clean boiler plate, unused svgs, icons
+```
+
+---
+
+```
+Now build the Risk Dashboard.
+
+The dashboard should show a clear table or list of risks.
+
+Each row should display:
+
+- title
+- category
+- status
+- inherent score
+- residual score
+- mitigation count
+
+For both inherent and residual score:
+- display the numeric score
+- display the severity
+- visually color-code the severity
+
+Severity colors:
+- Low is green
+- Medium is yellow
+- High is orange
+- Critical is red
+
+The most severe risks should be visually easy to identify.
+
+Add filters:
+- Category
+- Status
+
+Use:
+- All
+- Operational
+- Financial
+- Compliance
+- Security
+- Strategic
+
+for category.
+
+Use:
+- All
+- Open
+- Mitigating
+- Closed
+
+for status.
+
+The API should remain the source of truth for filtering and sorting.
+
+Sort risks by residual score descending.
+
+Each row should allow the user to open the risk detail page.
+
+Also add a clear "Create Risk" button.
+
+Keep the UI clean and simple. Do not spend time building a design system or complicated animations.
+```
+
+---
