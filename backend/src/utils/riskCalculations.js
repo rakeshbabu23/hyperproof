@@ -43,5 +43,4 @@ module.exports = {
   calculateInherentRisk,
   getSeverityBand,
   calculateResidualRisk,
-  EFFECTIVENESS_REDUCTION,
 };

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Container } from '@radix-ui/themes';
 import { RiskDashboard } from './pages/RiskDashboard';
 import { CreateRiskPage } from './pages/CreateRiskPage';
+import { EditRiskPage } from './pages/EditRiskPage';
 import { RiskDetailPage } from './pages/RiskDetailPage';
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
         <Routes>
           <Route path="/" element={<RiskDashboard />} />
           <Route path="/risks/new" element={<CreateRiskPage />} />
+          <Route path="/risks/:id/edit" element={<EditRiskPage />} />
           <Route path="/risks/:id" element={<RiskDetailPage />} />
         </Routes>
       </Container>

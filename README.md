@@ -1,189 +1,245 @@
-# Residual Risk Calculation — Thought Process
+# Risk Register
 
-The initial risk is calculated using likelihood and impact.
+## Overview
 
-For example:
+Risk Register is a full-stack app for tracking organizational risks and the mitigations that reduce them.
 
-- Likelihood = 4
-- Impact = 5
+You can create risks, attach mitigations, and see how residual risk changes as controls are added or removed. Inherent and residual scores (with severity bands) are calculated by the backend and shown in a React dashboard.
 
-**Inherent Risk** = 4 × 5 = 20
+## Tech Stack
 
-So the initial risk is 20, which falls under the Critical severity band.
+**Backend**
 
-Now suppose we have some mitigations:
+- Node.js
+- Express 5
+- SQLite via `better-sqlite3`
+- Zod (request validation)
 
-| Mitigation          | Effectiveness |
-| ------------------- | ------------- |
-| MFA                 | 4             |
-| Data Encryption     | 5             |
-| Security Training   | 2             |
+**Frontend**
 
-There can be different ways to think about how these mitigations reduce the inherent risk. The approaches considered below are summarized next.
+- React 19 + TypeScript
+- Vite
+- React Router
+- Radix UI Themes
 
-## Approach 1: Use the Strongest Mitigation
+## Features
 
-The first approach considered was to use only the strongest mitigation.
+- Risk dashboard with title, category, status, inherent/residual scores, severity badges, and mitigation count
+- Filter risks by category and/or status (AND when both are set)
+- List sorted by residual score descending (API)
+- Create and edit risks (shared form) with live inherent-score preview
+- Risk detail page with mitigations
+- Add, edit, and delete mitigations; residual score and mitigation count update from the API response
+- Delete a risk from the detail page (cascades mitigations)
+- Business rule: a risk cannot be Closed with zero mitigations
+- Loading, empty, and error states on the main screens
+- Backend unit and API integration tests
 
-For example:
+## Local Setup
 
-- MFA = 4
-- Data Encryption = 5
-- Security Training = 2
+Requires Node.js (v20+ recommended). Setup takes a few minutes.
 
-The strongest mitigation has an effectiveness of **5**.
+### 1. Install dependencies
 
-Map effectiveness to a reduction percentage:
+```bash
+cd backend
+npm install
 
-| Effectiveness | Reduction |
-| ------------- | --------- |
-| 1             | 10%       |
-| 2             | 20%       |
-| 3             | 30%       |
-| 4             | 40%       |
-| 5             | 50%       |
-
-If the inherent risk is 20 and the strongest mitigation has effectiveness 5:
-
-```
-Reduction = 50%
-
-Residual = 20 × (1 - 0.50)
-         = 10
+cd ../frontend
+npm install
 ```
 
-So:
+### 2. Environment variables (optional)
 
-- Inherent Risk = 20 → Critical
-- Residual Risk = 10 → Medium
+Defaults work out of the box. Override only if needed:
 
-**Pros:** Simple; the impact of a strong mitigation is easy to understand.
-
-**Trade-off:** Weaker mitigations don't directly affect the final score.
-
-## Approach 3: Add the Reduction From Every Mitigation
-
-Another approach was to let every mitigation contribute some percentage of reduction.
-
-| Effectiveness | Reduction |
-| ------------- | --------- |
-| 1             | 5%        |
-| 2             | 10%       |
-| 3             | 15%       |
-| 4             | 20%       |
-| 5             | 25%       |
-
-With the same mitigations:
-
-- MFA → 20%
-- Data Encryption → 25%
-- Security Training → 10%
-
-Total reduction = 55%
-
-For an inherent risk of 20:
-
-```
-Residual = 20 × (1 - 0.55)
-         = 9
-```
-
-So:
-
-- Inherent Risk = 20 → Critical
-- Residual Risk = 9 → Medium
-
-**Pros:** Every mitigation has an effect on the final risk.
-
-**Trade-off:** With many mitigations, reductions can stack quickly and risk falls too fast. A maximum reduction cap would be needed.
-
-## Approach 5: Reduce Both Likelihood and Impact
-
-Another approach was to model how a mitigation affects likelihood and impact separately.
-
-Before mitigation:
-
-- Likelihood = 4
-- Impact = 5
-- Inherent Risk = 4 × 5 = 20
-
-After applying controls:
-
-- Likelihood = 2
-- Impact = 4
-- Residual Risk = 2 × 4 = 8
-
-This can represent risk more naturally because different mitigations affect different parts of a risk. For example:
-
-| Mitigation        | Typical effect        |
-| ----------------- | --------------------- |
-| Firewall          | May reduce likelihood |
-| MFA               | May reduce likelihood |
-| Backups           | May reduce impact     |
-| Disaster Recovery | May reduce impact     |
-
-Instead of saying every mitigation simply reduces the overall score, each control is tied to the part of risk it actually changes.
-
-**Trade-off:** Needs more detail per mitigation — whether it affects likelihood, impact, or both, and by how much.
-
-## Approach 6: Weighted Mitigation Effectiveness
-
-Another possibility was to give mitigations different importance (weights).
-
-| Mitigation | Effectiveness | Weight |
-| ---------- | ------------- | ------ |
-| MFA        | 5             | 40%    |
-| Encryption | 4             | 35%    |
-| Training   | 2             | 25%    |
-
-Weighted effectiveness:
-
-```
-5 × 40% = 2.0
-4 × 35% = 1.4
-2 × 25% = 0.5
-
-Total = 3.9 / 5
-```
-
-Not every mitigation has the same importance. A critical control can influence residual risk more than a weaker one.
-
-**Trade-off:** Adds another factor (weight) that must be decided and maintained. More flexible, but more complex.
-
-## Final Approach
-
-After considering these options, the chosen model is **Approach 1: strongest mitigation**.
-
-Main reason: keep the calculation simple and predictable.
+| Variable | Where | Default | Purpose |
+| --- | --- | --- | --- |
+| `PORT` | backend | `3001` | Backend HTTP port |
+| `VITE_API_BASE_URL` | frontend | `http://localhost:3001` | API base URL used by the frontend |
 
 Example:
 
-- MFA = 4
-- Data Encryption = 5
-- Security Training = 2
+```bash
+# backend
+PORT=3001 npm run dev
 
-Strongest mitigation = **5** → **50%** reduction
-
-```
-Inherent Risk = 20
-
-Residual Risk = 20 × (1 - 0.50)
-              = 10
+# frontend (optional)
+# create frontend/.env with:
+# VITE_API_BASE_URL=http://localhost:3001
 ```
 
-Final result:
+### 3. Database
 
-- Inherent Risk = 20 → Critical
-- Residual Risk = 10 → Medium
+There is **no separate migration or seed step**.
 
-Residual risk is also floored so it can never fall below 1:
+On backend startup, SQLite:
+
+- creates `backend/data/` if needed
+- opens `backend/data/hyperproof.db`
+- creates the `risks` and `mitigations` tables (and index) if they do not exist
+
+Foreign keys are enabled; deleting a risk cascades to its mitigations.
+
+**Seed data:** none. Start with an empty database and create risks in the UI.
+
+### 4. Start the backend
+
+```bash
+cd backend
+npm run dev
+```
+
+Server: [http://localhost:3001](http://localhost:3001)  
+Health check: `GET /health`
+
+### 5. Start the frontend
+
+In a second terminal:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Open the Vite URL shown in the terminal (typically [http://localhost:5173](http://localhost:5173)).
+
+## API
+
+Base URL: `http://localhost:3001`
+
+Successful responses use `{ "success": true, "data": ... }`.  
+Errors use `{ "success": false, "message": "...", "errors": [...] }` when field details exist.
+
+### Risks
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/risks` | Create a risk |
+| `GET` | `/risks` | List risks (optional `?category=` and/or `?status=`; sorted by residual desc) |
+| `GET` | `/risks/:id` | Get one risk (includes `mitigations`) |
+| `PUT` | `/risks/:id` | Update a risk |
+| `DELETE` | `/risks/:id` | Delete a risk (cascades mitigations) |
+
+### Mitigations
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/risks/:riskId/mitigations` | Add a mitigation; response includes updated risk scores |
+| `PUT` | `/mitigations/:id` | Update a mitigation; response includes updated risk scores |
+| `DELETE` | `/mitigations/:id` | Delete a mitigation; response includes updated risk scores |
+
+### Other
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/health` | Liveness check |
+
+**Risk body fields:** `title`, `description`, `category`, `owner`, `likelihood` (1–5), `impact` (1–5), `status` (`Open` \| `Mitigating` \| `Closed`).
+
+**Categories:** `Operational`, `Financial`, `Compliance`, `Security`, `Strategic`.
+
+**Mitigation body fields:** `description`, `effectiveness` (1–5).
+
+## Risk Scoring
+
+### Inherent risk
 
 ```
-Residual Risk = max(1, calculatedResidual)
+Inherent Risk = Likelihood × Impact
 ```
 
-### Trade-off
+Example: likelihood `4`, impact `5` → inherent `20`.
 
-Only the strongest mitigation directly affects the score. Weaker mitigations do not separately contribute to the calculation.
+### Severity
 
-That trade-off is acceptable in favor of a simple, predictable scoring model. If multiple mitigations later need a measurable combined effect, additive reduction or weighted effectiveness can be revisited.
+| Score | Severity |
+| --- | --- |
+| 1–5 | Low |
+| 6–12 | Medium |
+| 13–19 | High |
+| 20–25 | Critical |
+
+### Residual risk
+
+Uses the **strongest mitigation only**:
+
+1. If there are no mitigations → residual = inherent  
+2. Otherwise take the highest `effectiveness`  
+3. Map effectiveness to reduction:
+
+| Effectiveness | Reduction |
+| --- | --- |
+| 1 | 10% |
+| 2 | 20% |
+| 3 | 30% |
+| 4 | 40% |
+| 5 | 50% |
+
+4. Compute:
+
+```
+residual = max(1, round(inherent × (1 - reduction)))
+```
+
+Example: inherent `20`, strongest effectiveness `5` → 50% reduction → residual `10`.
+
+### Why this formula
+
+Several approaches were considered (stacking every mitigation’s %, reducing likelihood/impact separately, weighted effectiveness). **Strongest mitigation** was chosen because it is simple, predictable, and easy to explain.
+
+**Trade-off:** when a stronger mitigation exists, weaker mitigations do not separately change the residual score. That is intentional for this model.
+
+The frontend may preview inherent risk while editing; the **backend always recalculates** scores and is the source of truth. Scores are not stored as independent database columns.
+
+## Business Rule
+
+A risk **cannot be marked Closed when it has zero mitigations**.
+
+Closing implies the risk has been addressed with at least one control. The API rejects create/update to `Closed` with no mitigations (`400`). Deleting the last mitigation from an already-Closed risk is also rejected so the invariant cannot be bypassed.
+
+## Design Decisions / Assumptions
+
+- **SQLite instead of PostgreSQL** for local setup speed: one file DB, no Docker/Postgres install, tables created on startup. For production multi-writer use, switch to PostgreSQL and proper migrations.
+- **Inherent and residual scores are calculated**, not stored as separate DB fields
+- **Deleting a risk cascades** to its mitigations (`ON DELETE CASCADE`)  
+- **Category + status filters use AND** when both query params are present  
+- List results are **always sorted by residual score descending** (no separate sort control in the UI)  
+- Residual is **rounded** to the nearest integer  
+- Residual **cannot go below 1**  
+- Architecture: routes → controllers → services → repositories  
+
+## What I’d do with more time
+
+- Switch from SQLite to **PostgreSQL** and add real database migration files so schema changes are tracked and easy to apply  
+- Put the scoring math in one shared place used by both frontend and backend, so the live preview and API never disagree  
+- Wrap related database writes in a single transaction (for example risk + mitigation changes) so we never end up half-updated  
+- Add more API tests for race conditions (two users deleting/updating at once) and tests that check response shapes stay stable  
+- Add pagination to `GET /risks`, reject stale edits using `updatedAt`, and return clearer machine-readable error codes with messages  
+- On the frontend, cache API data and refresh it after saves; optionally update the UI immediately and undo if the API fails  
+- Add request IDs in logs and basic metrics (how often Closed-without-mitigation is rejected, score ranges) to debug production issues  
+
+## Testing
+
+From the backend folder, run the full suite with one command:
+
+```bash
+cd backend
+npm test
+```
+
+This runs Node’s built-in test runner on `tests/*.test.js`.
+
+**Unit tests** (`riskCalculations.test.js`):
+
+- Inherent: `1×1`, `4×5`, `5×5`  
+- Severity boundaries: 1, 5, 6, 12, 13, 19, 20, 25  
+- Residual: no mitigations, effectiveness 1 and 5, strongest of many, floor at 1  
+
+**API integration tests** (`api.integration.test.js`):
+
+- Risk and mitigation CRUD  
+- Closed with zero mitigations rejected; Closed with a mitigation allowed  
+- Invalid likelihood / impact / effectiveness  
+- Missing risk / mitigation → 404  
+- Category+status AND filter, residual sort, cascade delete, malformed JSON → 400  

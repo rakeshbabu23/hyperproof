@@ -43,6 +43,7 @@ export interface Risk {
   residualScore: number;
   residualSeverity: Severity;
   mitigationCount: number;
+  mitigations: Mitigation[];
 }
 
 /** Fields required to create or fully update a risk. */

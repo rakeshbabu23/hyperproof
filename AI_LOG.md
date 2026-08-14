@@ -425,3 +425,385 @@ Keep the UI clean and simple. Do not spend time building a design system or comp
 ```
 
 ---
+---
+
+```
+Now implement the Create Risk and Edit Risk form.
+
+Fields:
+
+- Title
+- Description
+- Category
+- Owner
+- Likelihood
+- Impact
+- Status
+
+Use appropriate form controls:
+- text input for title/owner
+- textarea for description
+- select for category/status
+- number input or select for likelihood/impact
+
+Validation:
+- required fields
+- likelihood 1–5
+- impact 1–5
+
+The important UX requirement is that the inherent score updates live when likelihood or impact changes.
+
+For example:
+
+Likelihood = 4
+Impact = 5
+
+Show:
+
+Inherent Risk: 20
+Severity: Critical
+
+If the user changes impact to 3:
+
+Inherent Risk: 12
+Severity: Medium
+
+This live calculation can happen in React for the UI.
+
+However, do not send the calculated score as a trusted value to the backend. The backend remains the source of truth.
+
+Use the same form for create and edit where practical.
+
+Show useful validation errors from the API.
+
+After successful creation,update, navigate back to the dashboard or risk detail page
+```
+
+---
+
+```
+Now build the Risk Detail page.
+
+When a user opens a risk, show:
+
+- title
+- description
+- category
+- owner
+- status
+- likelihood
+- impact
+- inherent score
+- inherent severity
+- residual score
+- residual severity
+- mitigation count
+
+Below that, show the list of mitigations.
+
+For every mitigation show:
+- description
+- effectiveness
+- created date if useful
+- edit/delete actions
+
+Add an "Add Mitigation" form with:
+- description
+- effectiveness 1–5
+
+After adding a mitigation:
+- refresh/update the risk
+- show the new residual risk immediately
+- update mitigation count
+
+Also support editing and deleting mitigations.
+
+If a mitigation is deleted, the residual score should update.
+
+Make the residual risk visually prominent because that is the risk remaining after controls.
+
+Keep the page simple and readable.
+```
+
+---
+
+```
+curl --url 'http://localhost:3001/risks' \
+  -H 'Accept: */*' \
+  -H 'Accept-Language: en-US,en;q=0.9' \
+  -H 'Connection: keep-alive' \
+  -H 'Origin: http://localhost:5176' \
+  -H 'Referer: http://localhost:5176/' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-site' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36' \
+  -H 'sec-ch-ua: "Not=A?Brand";v="99", "Google Chrome";v="151", "Chromium";v="151"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"'
+
+getting 404
+```
+
+---
+
+```
+Now make the frontend handle the Closed risk business rule properly.
+
+The backend rule is:
+
+A risk cannot be marked Closed when it has zero mitigations.
+
+Do not rely only on frontend validation because the backend is the source of truth.
+
+On the edit risk form:
+- if the user selects Closed
+- and the risk has zero mitigations
+- show a clear message explaining that at least one mitigation is required.
+
+The backend must still reject the request if someone bypasses the frontend.
+
+Do not hide the Closed option completely. The user should understand why it cannot currently be used.
+
+Keep the behavior simple and clear.
+```
+
+---
+
+```
+Now add basic loading and error states to the frontend.
+
+I want:
+
+Dashboard:
+- loading state while fetching risks
+- useful error message if loading fails
+- empty state when there are no risks
+
+Risk detail:
+- loading state
+- not-found state
+- API error state
+
+Create/edit:
+- submitting state
+- prevent duplicate submission while saving
+- display backend validation/business errors
+
+Mitigation:
+- submitting state
+- display errors
+- prevent duplicate submission
+```
+
+---
+
+```
+Now review the frontend against the original requirements.
+
+Check:
+
+Dashboard:
+- risks displayed
+- title
+- category
+- status
+- inherent score
+- residual score
+- mitigation count
+- severity colors
+- category filter
+- status filter
+- residual sorting
+- create risk action
+
+Create/Edit:
+- all required fields
+- validation
+- live inherent score
+- status
+- closed-without-mitigation behavior
+
+Detail:
+- risk information
+- mitigations
+- add mitigation
+- edit mitigation
+- delete mitigation
+- residual score updates correctly
+
+Also check:
+- loading states
+- errors
+- empty states
+- TypeScript errors
+- unnecessary components/complexity
+
+Fix only necessary issues.
+```
+
+---
+
+```
+Now review and improve the automated tests.
+
+Focus on business behavior rather than implementation details.
+
+Unit tests must cover:
+
+Inherent risk:
+- 1 × 1
+- 4 × 5
+- 5 × 5
+
+Severity:
+- 1 = Low
+- 5 = Low
+- 6 = Medium
+- 12 = Medium
+- 13 = High
+- 19 = High
+- 20 = Critical
+- 25 = Critical
+
+Residual:
+- zero mitigations = inherent
+- effectiveness 1
+- effectiveness 5
+- multiple mitigations
+- strongest mitigation is used
+- residual cannot be below 1
+
+Business rule:
+- Closed with zero mitigations ==> rejected
+- Closed with at least one mitigation ==> allowed
+
+API tests:
+- create risk
+- get risk
+- update risk
+- delete risk
+- create mitigation
+- update mitigation
+- delete mitigation
+- invalid likelihood
+- invalid impact
+- invalid effectiveness
+- nonexistent risk
+- nonexistent mitigation
+
+Make sure the test suite can be run with one command.
+
+Do not add tests just for the sake of increasing coverage. Prioritize the important behavior.
+```
+
+---
+
+```
+Do a final review of the complete project as if you were reviewing it for a Software Engineer interview.
+
+Do not add new features.
+
+Check the project for:
+
+1. TypeScript errors
+2. lint errors
+3. failing tests
+4. unused imports
+5. dead code
+6. duplicated scoring logic
+7. inconsistent API responses
+8. missing validation
+9. incorrect HTTP status codes
+10. database relationship issues
+11. residual score calculation bugs
+12. frontend/backend type mismatches
+13. broken routes
+14. incorrect filter behavior
+15. incorrect sorting
+16. closed-without-mitigation rule
+17. missing error handling
+
+Also check whether the code is easy for another engineer to understand.
+
+Pay special attention to:
+- scoring logic
+- tests
+- API error handling
+- database integrity
+```
+
+---
+
+```
+Perform a defect-first code review of the hyperproof project at /Users/alimisettyrakeshbabu/Desktop/hyperproof for a Software Engineer interview.
+
+Focus on REAL bugs / requirement mismatches, not style nits.
+
+Check thoroughly:
+
+BACKEND:
+- backend/src/utils/riskCalculations.js - residual formula, floor, strongest mitigation
+- backend/src/services/riskService.js, mitigationService.js - closed without mitigation, cascade, scores not stored
+- backend/src/repositories/* - filters AND behavior, SQL
+- backend/src/models/* - FK cascade, CHECK constraints
+- backend/src/config/database.js - foreign_keys ON
+- backend/src/routes/*, controllers/*, validations/*, middleware/errorHandler.js - status codes, consistent responses, validation
+- backend/tests/* - coverage gaps for stated requirements
+
+FRONTEND:
+- types vs backend response shapes (especially Risk.mitigations)
+- API client error handling
+- RiskDashboard filters/sorting (must use API)
+- RiskForm live score vs not sending scores
+- RiskDetailPage mitigation CRUD residual updates
+- Dead code, unused exports, duplicated SEVERITY_COLOR (note only if problematic)
+
+Return:
+1. Critical/high bugs that should be fixed before interview
+2. Medium issues worth fixing quickly
+3. Acceptable tradeoffs / interview talking points
+4. Overall readiness verdict
+
+Be specific with file paths and line-level evidence.
+```
+
+---
+
+```
+Do a final review of the complete project as if you were reviewing it for a Software Engineer interview.
+
+Do not add new features.
+
+Check the project for:
+
+1. TypeScript errors
+2. lint errors
+3. failing tests
+4. unused imports
+5. dead code
+6. duplicated scoring logic
+7. inconsistent API responses
+8. missing validation
+9. incorrect HTTP status codes
+10. database relationship issues
+11. residual score calculation bugs
+12. frontend/backend type mismatches
+13. broken routes
+14. incorrect filter behavior
+15. incorrect sorting
+16. closed-without-mitigation rule
+17. missing error handling
+
+Also check whether the code is easy for another engineer to understand.
+
+Pay special attention to:
+- scoring logic
+- tests
+- API error handling
+- database integrity
+
+Keep the implementation simple. If something is not necessary for the requirements, don't add it.
+```
+
+---

@@ -15,9 +15,20 @@ function assertCanClose(status, mitigationCount) {
   }
 }
 
+function toMitigationResponse(mitigation) {
+  return {
+    id: mitigation.id,
+    riskId: mitigation.riskId,
+    description: mitigation.description,
+    effectiveness: mitigation.effectiveness,
+    createdAt: mitigation.createdAt,
+  };
+}
+
 function toRiskResponse(risk, mitigations = []) {
   const inherentScore = calculateInherentRisk(risk.likelihood, risk.impact);
   const residualScore = calculateResidualRisk(inherentScore, mitigations);
+  const mitigationList = mitigations.map(toMitigationResponse);
 
   return {
     id: risk.id,
@@ -34,7 +45,8 @@ function toRiskResponse(risk, mitigations = []) {
     inherentSeverity: getSeverityBand(inherentScore),
     residualScore,
     residualSeverity: getSeverityBand(residualScore),
-    mitigationCount: mitigations.length,
+    mitigationCount: mitigationList.length,
+    mitigations: mitigationList,
   };
 }
 

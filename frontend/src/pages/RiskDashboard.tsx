@@ -10,8 +10,9 @@ import {
   Spinner,
   Callout,
 } from '@radix-ui/themes';
-import { ApiError, getRisks } from '../api';
+import { getRisks } from '../api';
 import { ScoreSeverity } from '../components/ScoreSeverity';
+import { getErrorMessage } from '../utils/errors';
 import {
   RISK_CATEGORIES,
   RISK_STATUSES,
@@ -30,6 +31,9 @@ export function RiskDashboard() {
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const filtersActive = category !== 'All' || status !== 'All';
 
   useEffect(() => {
     let cancelled = false;
@@ -48,10 +52,9 @@ export function RiskDashboard() {
         }
       } catch (err) {
         if (!cancelled) {
+          setRisks([]);
           setError(
-            err instanceof ApiError
-              ? err.message
-              : 'Failed to load risks. Is the backend running?',
+            getErrorMessage(err, 'Failed to load risks.'),
           );
         }
       } finally {
@@ -65,7 +68,7 @@ export function RiskDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [category, status]);
+  }, [category, status, reloadKey]);
 
   return (
     <Flex direction="column" gap="5">
@@ -89,6 +92,7 @@ export function RiskDashboard() {
           <Select.Root
             value={category}
             onValueChange={(value) => setCategory(value as CategoryFilter)}
+            disabled={loading}
           >
             <Select.Trigger id="category-filter" placeholder="Category" />
             <Select.Content>
@@ -109,6 +113,7 @@ export function RiskDashboard() {
           <Select.Root
             value={status}
             onValueChange={(value) => setStatus(value as StatusFilter)}
+            disabled={loading}
           >
             <Select.Trigger id="status-filter" placeholder="Status" />
             <Select.Content>
@@ -123,22 +128,44 @@ export function RiskDashboard() {
         </Flex>
       </Flex>
 
-      {error && (
-        <Callout.Root color="red">
-          <Callout.Text>{error}</Callout.Text>
-        </Callout.Root>
-      )}
-
-      {loading ? (
+      {loading && (
         <Flex align="center" gap="2" py="6">
           <Spinner />
           <Text color="gray">Loading risks…</Text>
         </Flex>
-      ) : risks.length === 0 ? (
-        <Text color="gray">
-          No risks found. Create a risk to get started.
-        </Text>
-      ) : (
+      )}
+
+      {!loading && error && (
+        <Callout.Root color="red">
+          <Callout.Text>{error}</Callout.Text>
+          <Flex mt="3">
+            <Button
+              size="2"
+              variant="soft"
+              onClick={() => setReloadKey((key) => key + 1)}
+            >
+              Try again
+            </Button>
+          </Flex>
+        </Callout.Root>
+      )}
+
+      {!loading && !error && risks.length === 0 && (
+        <Flex direction="column" gap="3" py="4">
+          <Text color="gray">
+            {filtersActive
+              ? 'No risks match the selected filters.'
+              : 'No risks yet. Create a risk to get started.'}
+          </Text>
+          {!filtersActive && (
+            <Button asChild style={{ width: 'fit-content' }}>
+              <Link to="/risks/new">Create Risk</Link>
+            </Button>
+          )}
+        </Flex>
+      )}
+
+      {!loading && !error && risks.length > 0 && (
         <Table.Root variant="surface">
           <Table.Header>
             <Table.Row>

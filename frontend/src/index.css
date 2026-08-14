@@ -34,3 +34,35 @@ body {
 .risk-row--critical {
   box-shadow: inset 3px 0 0 var(--red-9);
 }
+
+.inherent-preview {
+  padding: 1rem;
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-3);
+  background: var(--gray-a2);
+}
+
+.residual-highlight {
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-3);
+  border: 1px solid var(--accent-6);
+  background: var(--accent-a3);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.mitigation-card,
+.add-mitigation {
+  padding: 1rem;
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-3);
+  background: var(--color-panel-solid);
+}
+
+.add-mitigation {
+  background: var(--gray-a2);
+}

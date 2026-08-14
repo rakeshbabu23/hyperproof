@@ -119,5 +119,4 @@ module.exports = {
   createMitigation,
   updateMitigation,
   deleteMitigation,
-  toMitigationResponse,
 };

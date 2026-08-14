@@ -23,6 +23,14 @@ function errorHandler(err, req, res, next) {
     return res.status(err.statusCode).json(payload);
   }
 
+  // Express body-parser / JSON parse failures are client errors.
+  if (err.type === 'entity.parse.failed' || err.status === 400 || err.statusCode === 400) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON request body',
+    });
+  }
+
   console.error(err);
 
   return res.status(500).json({
