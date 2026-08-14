@@ -807,3 +807,15 @@ Keep the implementation simple. If something is not necessary for the requiremen
 ```
 
 ---
+---
+
+```
+make sure in readme to mention that I have used
+
+- cursor code editor
+- wispr flow for speech to text for prompting
+
+Add table of contents as well
+```
+
+---

@@ -1,12 +1,26 @@
 # Risk Register
 
+## Table of contents
+
+- [Overview](#overview)
+- [Tech stack](#tech-stack)
+- [Features](#features)
+- [Local setup](#local-setup)
+- [API](#api)
+- [Risk scoring](#risk-scoring)
+- [Business rule](#business-rule)
+- [Design decisions / assumptions](#design-decisions--assumptions)
+- [What I’d do with more time](#what-id-do-with-more-time)
+- [Testing](#testing)
+- [Tools used](#tools-used)
+
 ## Overview
 
-Risk Register is a full-stack app for tracking organizational risks and the mitigations that reduce them.
+Risk Register is a full stack app for tracking organizational risks and the mitigations that reduce them.
 
 You can create risks, attach mitigations, and see how residual risk changes as controls are added or removed. Inherent and residual scores (with severity bands) are calculated by the backend and shown in a React dashboard.
 
-## Tech Stack
+## Tech stack
 
 **Backend**
 
@@ -27,7 +41,7 @@ You can create risks, attach mitigations, and see how residual risk changes as c
 - Risk dashboard with title, category, status, inherent/residual scores, severity badges, and mitigation count
 - Filter risks by category and/or status (AND when both are set)
 - List sorted by residual score descending (API)
-- Create and edit risks (shared form) with live inherent-score preview
+- Create and edit risks (shared form) with live inherent score preview
 - Risk detail page with mitigations
 - Add, edit, and delete mitigations; residual score and mitigation count update from the API response
 - Delete a risk from the detail page (cascades mitigations)
@@ -35,7 +49,7 @@ You can create risks, attach mitigations, and see how residual risk changes as c
 - Loading, empty, and error states on the main screens
 - Backend unit and API integration tests
 
-## Local Setup
+## Local setup
 
 Requires Node.js (v20+ recommended). Setup takes a few minutes.
 
@@ -141,7 +155,7 @@ Errors use `{ "success": false, "message": "...", "errors": [...] }` when field 
 
 **Mitigation body fields:** `description`, `effectiveness` (1–5).
 
-## Risk Scoring
+## Risk scoring
 
 ### Inherent risk
 
@@ -162,7 +176,9 @@ Example: likelihood `4`, impact `5` → inherent `20`.
 
 ### Residual risk
 
-Uses the **strongest mitigation only**:
+#### Approach used in this project: strongest mitigation (Approach 1)
+
+The code implements **Approach 1**: only the strongest mitigation affects the residual score.
 
 1. If there are no mitigations → residual = inherent  
 2. Otherwise take the highest `effectiveness`  
@@ -184,23 +200,80 @@ residual = max(1, round(inherent × (1 - reduction)))
 
 Example: inherent `20`, strongest effectiveness `5` → 50% reduction → residual `10`.
 
-### Why this formula
+I chose this because it is easy to understand and easy to explain. It also passes the basic checks. With no mitigations, residual equals inherent. A strong mitigation lowers the score a lot. Residual never goes below 1.
 
-Several approaches were considered (stacking every mitigation’s %, reducing likelihood/impact separately, weighted effectiveness). **Strongest mitigation** was chosen because it is simple, predictable, and easy to explain.
+If one mitigation is stronger, the weaker ones do not change the final score by themselves.
 
-**Trade-off:** when a stronger mitigation exists, weaker mitigations do not separately change the residual score. That is intentional for this model.
+The frontend can show a live inherent score while editing. The backend always recalculates the real scores. Scores are not saved as separate columns in the database.
 
-The frontend may preview inherent risk while editing; the **backend always recalculates** scores and is the source of truth. Scores are not stored as independent database columns.
+#### Other approaches considered (not used in code)
 
-## Business Rule
+Before choosing Approach 1, I also thought about these options.
+
+##### Approach 2: Add the reduction from every mitigation
+
+Let every mitigation add some percentage of reduction:
+
+| Effectiveness | Reduction |
+| --- | --- |
+| 1 | 5% |
+| 2 | 10% |
+| 3 | 15% |
+| 4 | 20% |
+| 5 | 25% |
+
+Example: MFA = 4, Data Encryption = 5, Security Training = 2 → 20% + 25% + 10% = **55%** total reduction.
+
+For inherent `20`:
+
+```
+Residual = 20 × (1 - 0.55) = 9  (Medium)
+```
+
+Every mitigation helps lower the score, which feels fair at first. With many strong mitigations the total cut can go over 100%. I could force residual to stay at least 1, but that still feels wrong for business. Adding more controls should not make the risk look almost gone automatically. I did not use this because the score can fall too fast.
+
+##### Approach 2: Reduce likelihood instead of the score directly
+
+Some controls lower the chance that something bad happens (for example MFA). So instead of cutting the final score, change likelihood:
+
+Likelihood `4`, Impact `5` → inherent `20`.
+After a strong control, Likelihood goes from `4` to `2`.
+Residual = `2 × 5 = 10`.
+
+This matches how some real controls work. I would need extra rules for how much effectiveness lowers likelihood, and I would need to keep likelihood between 1 and 5. That adds extra rules the assignment does not ask for. I did not use this because it needs too many extra rules for this assignment.
+
+##### Approach 3: Reduce both likelihood and impact
+
+Different controls can change different parts of a risk. Firewall or MFA may lower the chance of the event. Backups or disaster recovery may lower how bad the damage is.
+
+Before: Likelihood `4`, Impact `5` → inherent `20`.
+After: Likelihood `2`, Impact `4` → residual `8`.
+
+I believe this is closer to how a bigger risk system might work. Each mitigation only has one number (`effectiveness` from 1 to 5). The assignment does not say how much should go to likelihood versus impact, so I would need more fields or more guessing. I did not use this because it needs more data than the assignment gives.
+
+##### Approach 4: Weighted mitigation effectiveness
+
+Give some mitigations more importance (a weight), for example:
+
+| Mitigation | Effectiveness | Weight |
+| --- | --- | --- |
+| MFA | 5 | 40% |
+| Encryption | 4 | 35% |
+| Training | 2 | 25% |
+
+Then combine: `(5×0.40) + (4×0.35) + (2×0.25) = 3.9` (on a scale from 1 to 5).
+
+Important controls can matter more than weaker ones. I would need a new weight idea in the database, API, and UI. I did not use this because of extra assumptions.
+
+## Business rule
 
 A risk **cannot be marked Closed when it has zero mitigations**.
 
-Closing implies the risk has been addressed with at least one control. The API rejects create/update to `Closed` with no mitigations (`400`). Deleting the last mitigation from an already-Closed risk is also rejected so the invariant cannot be bypassed.
+Closing implies the risk has been addressed with at least one control. The API rejects create or update to `Closed` with no mitigations (`400`). Deleting the last mitigation from a risk that is already `Closed` is also rejected so the rule cannot be bypassed.
 
-## Design Decisions / Assumptions
+## Design decisions / assumptions
 
-- **SQLite instead of PostgreSQL** for local setup speed: one file DB, no Docker/Postgres install, tables created on startup. For production multi-writer use, switch to PostgreSQL and proper migrations.
+- **SQLite instead of PostgreSQL** for local setup speed: one file DB, no Docker or Postgres install, tables created on startup. For production with many writers, switch to PostgreSQL and proper migrations.
 - **Inherent and residual scores are calculated**, not stored as separate DB fields
 - **Deleting a risk cascades** to its mitigations (`ON DELETE CASCADE`)  
 - **Category + status filters use AND** when both query params are present  
@@ -213,11 +286,11 @@ Closing implies the risk has been addressed with at least one control. The API r
 
 - Switch from SQLite to **PostgreSQL** and add real database migration files so schema changes are tracked and easy to apply  
 - Put the scoring math in one shared place used by both frontend and backend, so the live preview and API never disagree  
-- Wrap related database writes in a single transaction (for example risk + mitigation changes) so we never end up half-updated  
-- Add more API tests for race conditions (two users deleting/updating at once) and tests that check response shapes stay stable  
-- Add pagination to `GET /risks`, reject stale edits using `updatedAt`, and return clearer machine-readable error codes with messages  
+- Wrap related database writes in a single transaction (for example risk + mitigation changes) so we never end up only partly updated  
+- Add more API tests for race conditions (two users deleting or updating at once) and tests that check response shapes stay stable  
+- Add pagination to `GET /risks`, reject stale edits using `updatedAt`, and return clearer error codes with messages  
 - On the frontend, cache API data and refresh it after saves; optionally update the UI immediately and undo if the API fails  
-- Add request IDs in logs and basic metrics (how often Closed-without-mitigation is rejected, score ranges) to debug production issues  
+- Add request IDs in logs and basic metrics (how often Closed without mitigation is rejected, score ranges) to debug production issues  
 
 ## Testing
 
@@ -228,7 +301,7 @@ cd backend
 npm test
 ```
 
-This runs Node’s built-in test runner on `tests/*.test.js`.
+This runs Node’s built in test runner on `tests/*.test.js`.
 
 **Unit tests** (`riskCalculations.test.js`):
 
@@ -243,3 +316,8 @@ This runs Node’s built-in test runner on `tests/*.test.js`.
 - Invalid likelihood / impact / effectiveness  
 - Missing risk / mitigation → 404  
 - Category+status AND filter, residual sort, cascade delete, malformed JSON → 400  
+
+## Tools used
+
+- **[Cursor](https://cursor.com)**: code editor used to build and iterate on this project  
+- **[Wispr Flow](https://wisprflow.ai)**: speech to text used for prompting while working in Cursor  
